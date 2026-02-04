@@ -1,0 +1,21 @@
+---
+title: "Exploratory Data Visualization"
+author: "Nathalie Bonnet"
+date: 2026-02-04
+format: html
+warning: FALSE
+---
+
+```{r}
+# Load necessary libraries
+library(tidyverse)
+library(here)
+library(janitor)
+```
+
+```{r}
+# Load in data
+zoopl <- read_csv(here("data", "EDI_data_zooplankton.csv")) %>% 
+  clean_names()
+```
+
