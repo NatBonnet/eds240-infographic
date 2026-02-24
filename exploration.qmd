@@ -11,11 +11,96 @@ warning: FALSE
 library(tidyverse)
 library(here)
 library(janitor)
+library(ggwordcloud)
 ```
 
 ```{r}
-# Load in data
+#| output: FALSE
+
+# Load in data and standardize column names
 zoopl <- read_csv(here("data", "EDI_data_zooplankton.csv")) %>% 
-  clean_names()
+  clean_names() %>% 
+  # Create a new column for just the year data to simplify plotting
+  mutate(year = year(date))
+
+# Test class of date column
+class(zoopl$date)
+
+# Find what the last year of observations was
+max(zoopl$year)
+
+# Find the number of mesh sizes used in all studies for bin width
+unique(zoopl$mesh_size)
+
 ```
 
+```{r}
+# Examine temporal trends in studies
+ggplot(zoopl, aes(x = year)) +
+  geom_histogram(color = "steelblue" , fill = "lightblue", alpha = 0.7, 
+                 bins = 33)+
+  # Scale down the years shown
+  scale_x_continuous(n.breaks = 25)+
+  theme_minimal()+
+  # Add labels
+  labs(title = "Distribution of Zooplankton Studies Across Time", 
+       x = "Date", 
+       y = "Density")+
+  # Rotate labels
+  theme(axis.text.x = element_text(angle = 70))
+```
+```{r}
+# Examine mesh size distribution
+ggplot(zoopl, aes(x = mesh_size)) +
+  geom_histogram(color = "steelblue" , fill = "lightblue", alpha = 0.7, bins = 15)+
+  scale_x_continuous()+
+  theme_minimal()+
+  labs(title = "Distribution of Mesh Size Used", 
+       x = "Size (mm)", 
+       y = "Count")
+```
+
+```{r}
+# Summarize the total times that gear type was used
+net_summary <- zoopl %>% 
+  group_by(gear_type) %>% 
+  summarise(count = n()) 
+
+# Plot frequency of gear
+ggplot(net_summary, aes(x = count, y = reorder(gear_type, count)))+
+  geom_col(fill = "steelblue")+
+  labs(title = "Gear Type Frequency",
+       x = "Study Count", 
+       y = "Gear Type")+
+  theme_minimal()
+```
+
+```{r}
+# Visualize trends in lake size vs depth across trophic state
+
+zoopl %>% 
+  # Filter out NAs from trophic state
+  filter(!trophic_state %in% NA) %>% 
+# Plot
+ggplot(aes(x = lake_area_km2, y = lake_maximum_depth_m))+
+  geom_point(shape = 21, size = 4, fill = "lightblue", alpha = 0.4)+
+  theme_minimal()+
+  # Facet wrap
+  facet_wrap(~trophic_state) +
+  labs(title = "Lake Depth by Area", 
+       x = "Lake Area (km^2)", 
+       y = "Maximum Lake Depth (m)")
+```
+
+# Discussion
+1. What have you learned about your data? Have any potentially interesting patterns emerged? Point to specific visualizations that you created as you describe your findings.
+
+Looking through these data, I found that most studies included in this metaanalysis dataset are from the early 2000's (histogram 1), so there is temporal bias in representation. Additionally, many lakes are very small in size with the exception of large oligotrophic lakes (facet wrap plot). Looking at the bar plot, the most common type of gear used for collection (method) was a bilge pump.
+
+2. In FPM #1, you outlined some questions that you wanted to answer using these data. Have you made any strides towards answering those questions? If yes, how so? If no, what next steps do you need to take (e.g. I need to create X plot type, I still need to track down Y data, I need to restructure existing data so that you can visualize it in Z ways, etc.)? Have any new questions emerged?
+
+I was curious to see how these data varied in distribution across time, so now I know that despite the large temporal range, there is not a significant amount of studies to represent change over time. I still think it will be possible to make interesting discoveries across the last ~25 years, however I need to do a bit more exploration to visualize zooplankton emergence trends. 
+
+3. What challenges do you foresee encountering with your data? These can be data wrangling and / or visualization challenges.
+
+These data were already very clean. The largest challenge I discovered was that the lakes are not clearly represented in space as there isn't even Country identifiers associated with the lakes, so I might need to do independent research on each study to determine the country if I want to link any real spatial trends to the data.
