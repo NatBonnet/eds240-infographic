@@ -139,7 +139,10 @@ light_pol <- read.delim(here("data", "light_pol.txt"), skip = 2) %>%
 
 # Create sf object for mapping
 light_pol_sf <- st_as_sf(light_pol, coords = c("lon", "lat"), crs = 4326)
+
 ```
+
+
 
 ```{r}
 #| warning: false
@@ -150,9 +153,9 @@ light_pol_sf <- st_as_sf(light_pol, coords = c("lon", "lat"), crs = 4326)
 showtext_auto(enable = TRUE)
 
 # Create map
-ggplot(light_pol_sf) +
+map <- ggplot(light_pol_sf) +
   # Use OpenStreetMap basemap
-  annotation_map_tile(type = "osm", zoomin = 0) +
+  annotation_map_tile(type = "cartodark", zoomin = 0) +
   # Fill points by radiance measured
   geom_sf(
     aes(fill = pollution_bin),
@@ -161,7 +164,7 @@ ggplot(light_pol_sf) +
     shape = 21
   ) +
   # Create custom radiance color scale
-  scale_fill_manual(values = c("#242842", "#625929", "#FFF533", "#FFFCC2", "white")) +
+  scale_fill_manual(values = c("#893533", "#AE4716", "#F6A905", "#FFF533", "#FFFCC2")) +
   # Add labels
   labs(title = "Light Pollution at Sample Sites on the France-Switzerland Border",
        subtitle = "Greater Light Pollution at Swiss City Sites",
@@ -217,16 +220,13 @@ ggplot(light_pol_sf) +
     
 
 # Figure out how to fix alpha somehow
+
+
 ```
 
 ```{r}
 # Save map for class
-ggsave(here("figures", "draft_map.png"), 
-                       device = "png", 
-                       width = 8,
-                       height = 7, 
-                       units = "in", 
-                       dpi = 300)
+ggsave("draft_map.png", device = "png", path = "figures/", plot = map, dpi = 600 )
 ```
 
 ## Drafting initial ideas
@@ -259,15 +259,16 @@ pol_sum <- light_pol %>%
                       "f" = "Female")) 
 
 # Bar plot
-ggplot(pol_sum, aes(x = pollution_status, y = prop_attracted, fill = sex)) +
+bar_plot <- ggplot(pol_sum, aes(x = pollution_status, y = prop_attracted, fill = sex)) +
   # Put sex columns next to each other instead of stacking
   geom_col(position = "dodge") +
   # Fill labels to look like light beams
   scale_fill_manual(values = c("#FFFCC2", "#FFF533")) +
+  scale_y_continuous(labels = scales::percent)+
   # Add labels
   labs(title = "Flight-to-Light Behavior in Ermine Moths", 
        subtitle = "Moths in light polluted areas show reduced attraction to light", 
-       caption = "Data: Altermatt, Florian; Ebert, Dieter (2016),\n Reduced flight-to-light behaviour of moth populations exposed to long-term urban light pollution,\n Biology Letters, Article-journal, https://doi.org/10.1098/rsbl.2016.0111", 
+       caption = "Data: Altermatt & Dieter (2016)", 
        y = "Proportion of moths attracted to light")+
   theme_minimal() +
   # Apply custom theme
@@ -335,6 +336,7 @@ ggplot(pol_sum, aes(x = pollution_status, y = prop_attracted, fill = sex)) +
       legend.title = element_blank()
       )
 
+ggsave("bar_plot.pdf", device = "pdf", path = "figures/", plot = bar_plot, dpi = 600 )
 ```
 
 ```{r}
@@ -408,6 +410,14 @@ ggplot(pol_tot_sum, aes(x = 2, y = prop_attracted, fill = pollution_status)) +
       
       legend.title = element_blank()
       )
+
+
+ggsave(here("figures", "donut_plot.pdf"), 
+                       device = "pdf", 
+                       width = 8,
+                       height = 7, 
+                       units = "in", 
+                       dpi = 300)
 ```
 
 1.  What are the key insights you want your infographic to communicate, and how will your design choices help highlight and support those messages?
