@@ -57,6 +57,7 @@ library(sf)
 library(ggspatial)
 library(prettymapr)
 library(showtext)
+library(ggalluvial)
 
 # Add desired fonts
 font_add_google(name = "Noto Sans", family = "noto_sans")
@@ -153,7 +154,7 @@ light_pol_sf <- st_as_sf(light_pol, coords = c("lon", "lat"), crs = 4326)
 showtext_auto(enable = TRUE)
 
 # Create map
-map <- ggplot(light_pol_sf) +
+ggplot(light_pol_sf) +
   # Use OpenStreetMap basemap
   annotation_map_tile(type = "cartodark", zoomin = 0) +
   # Fill points by radiance measured
@@ -168,12 +169,12 @@ map <- ggplot(light_pol_sf) +
   # Add labels
   labs(title = "Light Pollution at Sample Sites on the France-Switzerland Border",
        subtitle = "Greater Light Pollution at Swiss City Sites",
-       caption = "Data: Altermatt, Florian; Ebert, Dieter (2016),\n Reduced flight-to-light behaviour of moth populations exposed to long-term urban light pollution,\n Biology Letters, Article-journal, https://doi.org/10.1098/rsbl.2016.0111") +
+       caption = "Data: Altermatt & Dieter (2016)") +
   theme_light() +
   # Add legend title
   guides(fill = guide_legend(
     # Legend title
-    title = "Radiance\n(10–9 W sr–1 cm–2)"
+    title = expression(atop("Radiance", "(W sr"^-1~"cm"^-2*")"))
   )) +
   # Create custom theme
   theme(
@@ -217,16 +218,13 @@ map <- ggplot(light_pol_sf) +
     legend.title = element_text(size = 18,
       family = "noto_sans", color = "lightgrey")
     )
-    
-
-# Figure out how to fix alpha somehow
 
 
 ```
 
 ```{r}
 # Save map for class
-ggsave("draft_map.png", device = "png", path = "figures/", plot = map, dpi = 600 )
+#ggsave("draft_map.png", device = "png", path = "figures/", plot = map, dpi = 600 )
 ```
 
 ## Drafting initial ideas
@@ -259,7 +257,7 @@ pol_sum <- light_pol %>%
                       "f" = "Female")) 
 
 # Bar plot
-bar_plot <- ggplot(pol_sum, aes(x = pollution_status, y = prop_attracted, fill = sex)) +
+ggplot(pol_sum, aes(x = pollution_status, y = prop_attracted, fill = sex)) +
   # Put sex columns next to each other instead of stacking
   geom_col(position = "dodge") +
   # Fill labels to look like light beams
@@ -336,7 +334,7 @@ bar_plot <- ggplot(pol_sum, aes(x = pollution_status, y = prop_attracted, fill =
       legend.title = element_blank()
       )
 
-ggsave("bar_plot.pdf", device = "pdf", path = "figures/", plot = bar_plot, dpi = 600 )
+#ggsave("bar_plot.pdf", device = "pdf", path = "figures/", plot = bar_plot, dpi = 600 )
 ```
 
 ```{r}
@@ -412,12 +410,112 @@ ggplot(pol_tot_sum, aes(x = 2, y = prop_attracted, fill = pollution_status)) +
       )
 
 
-ggsave(here("figures", "donut_plot.pdf"), 
-                       device = "pdf", 
-                       width = 8,
-                       height = 7, 
-                       units = "in", 
-                       dpi = 300)
+#ggsave(here("figures", "donut_plot.pdf"), 
+                       # device = "pdf", 
+                       # width = 8,
+                       # height = 7, 
+                       # units = "in", 
+                       # dpi = 300)
+```
+
+```{r}
+df <- pol_tot_sum %>%
+  select(-prop_attracted) %>% 
+  pivot_longer(
+    cols = c(total_attracted, total_not_attracted),
+    names_to = 'attraction' ,
+    values_to = 'count'
+  ) %>% 
+  mutate(attraction = recode_factor(attraction, 
+                                    total_attracted = "attracted", 
+                                    total_not_attracted = "not attracted"))
+
+ggplot(df,
+  aes(axis1 = pollution_status, axis2 = attraction, y = count)) +
+  geom_alluvium(aes(fill = pollution_status), width = 0.3, alpha = 0.7) +
+  geom_stratum(width = 0.2, fill = "white", color = "grey60") +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum)),
+            size = 3.5) +
+  scale_fill_manual(values = c("#868677", "#535459")) +
+  scale_x_discrete(limits = c("Pollution Status", "Attraction"),
+                   expand = c(0.1, 0.1)) +
+  labs(y = "Number of moths") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title = "Proportion of Moths That Flew to Light", 
+       subtitle = "a larger proportion of moths in light-polluted areas do not fly to light", 
+       caption = "Data: Altermatt & Dieter (2016)") +
+  theme(
+      # Move legend to the bottom of the plot
+      legend.position = "bottom", 
+      
+      # Remove axis title because it's redundant
+      axis.title.x = element_blank(), 
+      
+      # Background colors
+      plot.background = element_rect(fill = "#242842"),
+      panel.background = element_rect(fill = "#242842"),
+      legend.background = element_rect(fill = "#242842"),
+      
+      # Align with y axis text instead of just axis
+      plot.title.position = "plot",
+      
+      # Title
+      plot.title = element_text(
+        face = "bold",
+        family = "libre",
+        # Size relative to base size in theme
+        size = 27,
+        lineheight = 1.5,
+        color = "white"
+      ),
+      
+      # Subtitle
+      plot.subtitle = element_text(
+        family = "noto_sans",
+        size = 20,
+        margin = margin(b = 8),
+        color = "lightgrey"
+      ),
+      
+      # Axis titles
+      axis.title = element_text(
+        size = 15,
+        family = "noto_sans",
+        color = "lightgrey"
+      ), 
+      
+      # Axis labels
+      axis.text = element_text(
+        size = 15,
+        family = "noto_sans",
+        color = "lightgrey"
+      ),
+      
+      # Caption
+      plot.caption = element_text(
+        family = "noto_sans",
+        face = "italic",
+        size = 15,
+        color = "lightgrey"
+      ),
+      
+      # Legend
+      legend.text = element_text(
+        size = 15,
+        family = "noto_sans",
+        color = "lightgrey"
+      ),
+      legend.title = element_blank()
+      )
+
+
+#ggsave(here("figures", "alluvial_plot.pdf"), 
+                       # device = "pdf", 
+                       # width = 8,
+                       # height = 7, 
+                       # units = "in", 
+                       # dpi = 300)
 ```
 
 1.  What are the key insights you want your infographic to communicate, and how will your design choices help highlight and support those messages?
